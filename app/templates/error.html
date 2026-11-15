@@ -1,0 +1,8 @@
+{% extends "base.html" %}
+{% block title %}{{ error.code }}{% endblock %}
+{% block heading %}Something is off{% endblock %}
+{% block content %}
+<div class="panel err"><div class="num">{{ error.code }}</div><h2 style="margin:8px 0">{{ error.name }}</h2>
+<p class="muted">{% if error.code == 413 %}That file is larger than the upload limit.{% elif error.code == 403 %}Your role cannot open this page.{% else %}We could not find what you were looking for.{% endif %}</p>
+<a class="btn-x blue" href="{{ url_for('main.dashboard') }}">Back to dashboard</a></div>
+{% endblock %}

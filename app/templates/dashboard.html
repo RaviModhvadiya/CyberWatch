@@ -1,0 +1,155 @@
+{% extends "base.html" %} {% from "_macros.html" import sev, status, empty with
+context %} {% block title %}Dashboard{% endblock %} {% block heading
+%}Dashboard{% endblock %} {% block sub %}{{ 'All accounts' if
+current_user.is_admin else 'Your uploads' }} &middot;
+<span id="live-at">Updated just now</span>{% endblock %} {% block actions
+%}<button
+  class="btn-x ghost sm"
+  id="refresh-now"
+  type="button"
+  aria-label="Refresh now"
+>
+  <i class="bi bi-arrow-repeat"></i><span>Refresh</span></button
+><a class="btn-x blue sm" href="{{ url_for('logs.upload') }}"
+  ><i class="bi bi-cloud-arrow-up"></i><span>Upload logs</span></a
+>{% endblock %} {% block content %}
+<div
+  id="dash"
+  class="rise"
+  data-url="{{ url_for('main.api_dashboard') }}"
+  data-refresh="{{ refresh }}"
+  data-alerts="{{ url_for('alerts.index') }}"
+  data-entries="{{ url_for('logs.entries') }}"
+  data-failed="{{ config.FAILED_STATUS }}"
+>
+  <section class="posture">
+    <div class="posture-gauge">
+      <div
+        id="chart-score"
+        class="chart-box loading"
+        style="min-height: 250px; width: 100%"
+      ></div>
+      <div class="level" style="color:{{ payload.score.color }}">
+        <span class="live" id="live-dot"></span
+        ><span id="score-level-text">{{ payload.score.label }}</span>
+      </div>
+    </div>
+    <div class="ledger c3">
+      {% for key, label, icon, tone, link in [ ('total_logs','Total log
+      entries','database','',url_for('logs.entries')), ('today_logs','Ingested
+      today','calendar-check','',url_for('logs.index')),
+      ('failed_logins','Failed logins','x-octagon','hot',url_for('logs.entries',
+      status=config.FAILED_STATUS)), ('success_logins','Successful
+      logins','check2-circle','cool',url_for('logs.entries',
+      status=config.SUCCESS_MIN)), ('critical_alerts','Open critical
+      alerts','exclamation-triangle','hot',url_for('alerts.index',
+      severity='critical', status='open')), ('high_risk_ips','High-risk
+      IPs','geo-alt','hot',url_for('alerts.index', status='open',
+      severity='high'))] %}
+      <a class="ledger-i {{ tone }}" href="{{ link }}"
+        ><small><i class="bi bi-{{ icon }}"></i>{{ label }}</small
+        ><span class="num" data-stat="{{ key }}">{{ payload.cards[key] }}</span
+        ><i class="bi bi-arrow-up-right go"></i
+      ></a>
+      {% endfor %}
+    </div>
+  </section>
+  <div class="grid g-12" style="margin-top: 18px">
+    <div class="panel span-8">
+      <div class="panel-head">
+        <h3>Failed logins by hour of day</h3>
+        <small>Click to inspect</small>
+      </div>
+      <div class="panel-body">
+        <div id="chart-hourly" class="chart-box loading"></div>
+      </div>
+    </div>
+    <div class="panel span-4">
+      <div class="panel-head"><h3>Attack types</h3></div>
+      <div class="panel-body">
+        <div id="chart-types" class="chart-box loading"></div>
+      </div>
+    </div>
+    <div class="panel span-5">
+      <div class="panel-head"><h3>Top attacking IPs</h3></div>
+      <div class="panel-body">
+        <div id="chart-ips" class="chart-box loading"></div>
+      </div>
+    </div>
+    <div class="panel span-3">
+      <div class="panel-head"><h3>Logins</h3></div>
+      <div class="panel-body">
+        <div id="chart-split" class="chart-box loading"></div>
+      </div>
+    </div>
+    <div class="panel span-4">
+      <div class="panel-head"><h3>Daily attack trend</h3></div>
+      <div class="panel-body">
+        <div id="chart-trend" class="chart-box loading"></div>
+      </div>
+    </div>
+    <div class="panel span-12">
+      <div class="panel-head">
+        <h3>Needs attention</h3>
+        <small
+          ><a href="{{ url_for('alerts.index', status='open') }}"
+            >All open alerts <i class="bi bi-arrow-right"></i></a
+        ></small>
+      </div>
+      {% if urgent %}
+      <div class="table-wrap">
+        <table class="tbl" style="margin-top: 12px">
+          <thead>
+            <tr>
+              <th>Severity</th>
+              <th>Type</th>
+              <th>Source IP</th>
+              <th>Detail</th>
+              <th>Status</th>
+              <th></th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for a in urgent %}
+            <tr
+              data-href="{{ url_for('alerts.detail', alert_id=a.id) }}"
+              class="row-sev-{{ a.severity }}"
+            >
+              <td>{{ sev(a.severity) }}</td>
+              <td>{{ names.get(a.type, a.type) }}</td>
+              <td class="mono">
+                {{ a.ip }}
+                <button
+                  class="copy"
+                  type="button"
+                  data-copy="{{ a.ip }}"
+                  aria-label="Copy IP"
+                >
+                  <i class="bi bi-clipboard"></i>
+                </button>
+              </td>
+              <td class="req" title="{{ a.description }}">
+                {{ a.description }}
+              </td>
+              <td>{{ status(a.status) }}</td>
+              <td class="r">
+                <a
+                  class="btn-x ghost sm"
+                  href="{{ url_for('alerts.detail', alert_id=a.id) }}"
+                  >Investigate</a
+                >
+              </td>
+            </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+      {% else %}{{ empty('shield-check', 'Nothing needs attention', 'Upload a
+      log file and detections will appear here.') }}{% endif %}
+    </div>
+  </div>
+</div>
+<script type="application/json" id="dash-data">
+  {{ payload|tojson }}
+</script>
+{% endblock %}

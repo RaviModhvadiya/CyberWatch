@@ -1,0 +1,20 @@
+{% extends "base.html" %}
+{% from "_macros.html" import empty, csrf with context %}
+{% block title %}Reports{% endblock %}
+{% block heading %}Reports{% endblock %}
+{% block sub %}Export what the system found as PDF, CSV or Excel{% endblock %}
+{% block content %}
+<div class="grid g-12 rise">
+  <form class="panel span-5" method="post" data-download><div class="panel-body" style="padding:24px">{{ csrf() }}
+    <div class="field"><label for="dataset">What to export</label><select id="dataset" name="dataset">{% for k, v in defaults.report_datasets.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
+    <div class="field"><label for="fmt">Format</label><select id="fmt" name="fmt">{% for k, v in defaults.report_formats.items() %}<option value="{{ k }}">{{ v }}</option>{% endfor %}</select></div>
+    <p class="muted" style="margin:14px 0 0">{{ 'Includes every account.' if current_user.is_admin else 'Includes only your own uploads and alerts.' }} Large exports are capped at {{ '{:,}'.format(config.REPORT_MAX_ROWS) }} rows.</p>
+    <button class="btn-x blue" style="margin-top:18px"><i class="bi bi-download"></i>Generate and download</button>
+  </div></form>
+  <section class="panel span-7"><div class="panel-head"><h3>Recent exports</h3></div>
+  {% if history %}<div class="table-wrap"><table class="tbl" style="margin-top:12px"><thead><tr><th>Dataset</th><th>Format</th><th>Rows</th>{% if current_user.is_admin %}<th>By</th>{% endif %}<th>Generated</th><th></th></tr></thead><tbody>
+    {% for r in history %}<tr><td>{{ defaults.report_datasets[r.dataset] }}</td><td><span class="tag">{{ r.fmt|upper }}</span></td><td class="num">{{ r.row_count }}</td>{% if current_user.is_admin %}<td>{{ r.user.name }}</td>{% endif %}<td class="muted" title="{{ r.generated_date.strftime('%d %b %Y, %H:%M') }}">{{ r.generated_date|ago }}</td>
+    <td><form method="post" action="{{ url_for('reports.again', report_id=r.id) }}" data-download>{{ csrf() }}<button class="btn-x ghost sm">Download again</button></form></td></tr>{% endfor %}
+  </tbody></table></div>{% else %}{{ empty('file-earmark-bar-graph', 'No exports yet', 'Generated reports will be listed here.') }}{% endif %}</section>
+</div>
+{% endblock %}

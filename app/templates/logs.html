@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% from "_macros.html" import pager, empty, csrf with context %}
+{% block title %}Uploaded files{% endblock %}
+{% block heading %}Uploaded files{% endblock %}
+{% block sub %}Every file you ingested and what the pipeline found in it{% endblock %}
+{% block actions %}<a class="btn-x blue sm" href="{{ url_for('logs.upload') }}"><i class="bi bi-cloud-arrow-up"></i>Upload</a>{% endblock %}
+{% block content %}
+<div class="panel">
+{% if pagination.items %}
+<div class="table-wrap"><table class="tbl"><thead><tr><th>File</th>{% if current_user.is_admin %}<th>Owner</th>{% endif %}<th>Format</th><th>Entries</th><th>Skipped</th><th>Alerts</th><th>Status</th><th>Uploaded</th><th></th></tr></thead><tbody>
+{% for log in pagination.items %}<tr>
+  <td class="wrap"><b>{{ log.filename }}</b>{% if log.error %}<div class="muted" style="font-size:12.5px">{{ log.error }}</div>{% endif %}</td>
+  {% if current_user.is_admin %}<td>{{ log.user.name }}</td>{% endif %}
+  <td><span class="tag">{{ log.log_type }}</span></td><td class="num">{{ '{:,}'.format(log.total_entries or 0) }}</td><td class="num">{{ log.skipped_lines or 0 }}</td>
+  <td class="num">{{ log.alert_count or 0 }}</td><td><span class="st st-{{ log.status }}">{{ log.status|capitalize }}</span></td><td class="muted" title="{{ log.upload_date.strftime('%d %b %Y, %H:%M') }}">{{ log.upload_date|ago }}</td>
+  <td style="white-space:nowrap">{% if log.status == 'completed' %}<a class="btn-x ghost sm" href="{{ url_for('logs.entries', log_id=log.id) }}">Entries</a> <a class="btn-x ghost sm" href="{{ url_for('alerts.index', log_id=log.id) }}">Alerts</a>{% endif %}
+    <form method="post" action="{{ url_for('logs.delete', log_id=log.id) }}" data-confirm="Delete this file, its entries, alerts and notes? This cannot be undone." style="display:inline">{{ csrf() }}<button class="btn-x danger sm" aria-label="Delete"><i class="bi bi-trash"></i></button></form></td>
+</tr>{% endfor %}</tbody></table></div>{{ pager(pagination) }}
+{% else %}{{ empty('folder2-open', 'No files yet', 'Upload your first log file to start monitoring.') }}{% endif %}
+</div>
+{% endblock %}

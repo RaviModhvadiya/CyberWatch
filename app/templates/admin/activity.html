@@ -1,0 +1,12 @@
+{% extends "base.html" %}
+{% from "_macros.html" import pager, empty with context %}
+{% block title %}Activity trail{% endblock %}
+{% block heading %}Activity trail{% endblock %}
+{% block sub %}Sign-ins, uploads, alert updates and admin changes{% endblock %}
+{% block content %}
+<div class="panel">
+{% if pagination.items %}<div class="table-wrap"><table class="tbl"><thead><tr><th>When</th><th>Who</th><th>Action</th><th>Detail</th><th>From IP</th></tr></thead><tbody>
+{% for r in pagination.items %}<tr><td class="muted" style="white-space:nowrap">{{ r.created_at.strftime('%d %b %Y, %H:%M:%S') }}</td><td>{{ r.user.name if r.user else 'Anonymous' }}</td><td><span class="tag">{{ r.action|replace('_', ' ') }}</span></td><td class="wrap">{{ r.detail }}</td><td class="mono">{{ r.ip }}</td></tr>{% endfor %}
+</tbody></table></div>{{ pager(pagination) }}{% else %}{{ empty('clock-history', 'No activity yet', 'Actions will be recorded here.') }}{% endif %}
+</div>
+{% endblock %}

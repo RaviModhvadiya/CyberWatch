@@ -1,0 +1,91 @@
+{
+  "roles": {"admin": "Administrator", "analyst": "Security Analyst"},
+  "log_types": ["auto", "apache", "nginx", "ssh", "windows", "csv"],
+  "severity_weights": {"low": 1, "medium": 3, "high": 5, "critical": 10},
+  "alert_statuses": {
+    "open": "Open",
+    "investigating": "Investigating",
+    "resolved": "Resolved",
+    "false_positive": "False positive"
+  },
+  "active_statuses": ["open", "investigating"],
+  "closing_statuses": ["resolved", "false_positive"],
+  "report_formats": {"pdf": "PDF", "csv": "CSV", "xlsx": "Excel"},
+  "report_datasets": {"alerts": "Alerts with resolution notes", "logs": "Parsed log entries"},
+  "score_levels": [
+    {"max": 25, "label": "Calm", "color": "#12a67a"},
+    {"max": 50, "label": "Watchful", "color": "#2446e8"},
+    {"max": 75, "label": "Elevated", "color": "#f5a623"},
+    {"max": 100, "label": "Under attack", "color": "#ef4a2b"}
+  ],
+  "windows_events": {"4625": "failed", "4624": "success"},
+  "csv_aliases": {
+    "ip": ["ip", "src_ip", "source_ip", "client_ip", "remote_addr", "remote_ip", "clientip", "source"],
+    "timestamp": ["timestamp", "time", "datetime", "date", "@timestamp", "event_time"],
+    "status_code": ["status_code", "status", "http_status", "response_code", "code"],
+    "request": ["request", "url", "uri", "path", "query", "payload", "message"],
+    "method": ["method", "http_method", "verb"],
+    "user_agent": ["user_agent", "useragent", "agent", "ua"]
+  },
+  "rules": [
+    {
+      "key": "failed_login", "name": "Failed login", "kind": "status", "severity": "low",
+      "threshold": 1, "window_seconds": 0,
+      "description": "Every request answered with the configured failed-login status code."
+    },
+    {
+      "key": "brute_force", "name": "Brute force", "kind": "fail_burst", "severity": "high",
+      "threshold": 5, "window_seconds": 600,
+      "description": "Repeated failed logins from one IP inside the time window."
+    },
+    {
+      "key": "sql_injection", "name": "SQL injection", "kind": "pattern", "severity": "critical",
+      "threshold": 1, "window_seconds": 0,
+      "description": "SQL keywords and tautologies inside request strings.",
+      "patterns": [
+        "\\bunion\\b[\\s\\S]{0,30}\\bselect\\b",
+        "\\bselect\\b[\\s\\S]{0,60}\\bfrom\\b",
+        "['\"]\\s*(or|and)\\s+['\"\\d]",
+        "\\b(or|and)\\b\\s+\\d+\\s*=\\s*\\d+",
+        "\\b(drop|truncate)\\s+table\\b",
+        "\\binsert\\s+into\\b",
+        "\\bsleep\\s*\\(\\s*\\d+",
+        "\\bwaitfor\\s+delay\\b",
+        "information_schema",
+        "xp_cmdshell",
+        ";\\s*--"
+      ]
+    },
+    {
+      "key": "xss", "name": "Cross-site scripting", "kind": "pattern", "severity": "high",
+      "threshold": 1, "window_seconds": 0,
+      "description": "Script tags, event handlers and cookie access in request strings.",
+      "patterns": [
+        "<\\s*script",
+        "javascript\\s*:",
+        "\\bon(error|load|click|mouseover|focus)\\s*=",
+        "<\\s*(iframe|svg|img)[^>]*(src|onload|onerror)",
+        "document\\.(cookie|location)",
+        "\\balert\\s*\\("
+      ]
+    },
+    {
+      "key": "directory_traversal", "name": "Directory traversal", "kind": "pattern", "severity": "high",
+      "threshold": 1, "window_seconds": 0,
+      "description": "Parent-directory jumps and requests for sensitive system files.",
+      "patterns": [
+        "\\.\\./",
+        "\\.\\.\\\\",
+        "%2e%2e",
+        "/etc/(passwd|shadow)",
+        "\\b(boot|win)\\.ini\\b",
+        "c:\\\\windows"
+      ]
+    },
+    {
+      "key": "dos", "name": "High request rate (DoS)", "kind": "rate", "severity": "critical",
+      "threshold": 100, "window_seconds": 60,
+      "description": "One IP sending too many requests inside the time window."
+    }
+  ]
+}

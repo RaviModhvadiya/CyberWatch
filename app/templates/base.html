@@ -1,0 +1,129 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>{% block title %}{% endblock %} - {{ app_name }}</title>
+    <link
+      rel="icon"
+      href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%23101828'/%3E%3Cpath d='M16 6l8 3v6c0 5-3.4 8.6-8 10-4.6-1.4-8-5-8-10V9z' fill='none' stroke='white' stroke-width='2'/%3E%3Cpath d='M12.5 15.5l2.5 2.5 4.5-5' fill='none' stroke='%23ef4a2b' stroke-width='2.2'/%3E%3C/svg%3E"
+    />
+    <link
+      rel="preload"
+      href="{{ url_for('static', filename='vendor/fonts/public-sans-latin-wght-normal.woff2') }}"
+      as="font"
+      type="font/woff2"
+      crossorigin
+    />
+    <link
+      href="{{ url_for('static', filename='css/fonts.css') }}"
+      rel="stylesheet"
+    />
+    <link
+      href="{{ url_for('static', filename='vendor/icons/bootstrap-icons.min.css') }}"
+      rel="stylesheet"
+    />
+    <link
+      href="{{ url_for('static', filename='css/app.css') }}"
+      rel="stylesheet"
+    />
+  </head>
+  <body>
+    <a class="skip" href="#content">Skip to content</a>
+    {% macro nav(endpoint, icon, label, prefix=None) %}
+    <a
+      class="nav-i {{ 'on' if request.endpoint == endpoint or (prefix and (request.endpoint or '').startswith(prefix)) else '' }}"
+      href="{{ url_for(endpoint) }}"
+      ><i class="bi bi-{{ icon }}"></i>{{ label }}{{ caller() if caller else ''
+      }}</a
+    >
+    {% endmacro %}
+    <aside class="side" id="side">
+      <a class="brand" href="{{ url_for('main.dashboard') }}"
+        ><span class="brand-mark"><i class="bi bi-shield-check"></i></span>{{
+        app_name }}</a
+      >
+      <div class="nav-title">Monitor</div>
+      {{ nav('main.dashboard', 'speedometer2', 'Dashboard') }} {% call
+      nav('alerts.index', 'bell', 'Alerts', 'alerts.') %}{% if pending_alerts
+      %}<span class="count"
+        >{{ pending_alerts if pending_alerts < 1000 else '999+' }}</span
+      >{% endif %}{% endcall %} {{ nav('logs.entries', 'search', 'Log explorer')
+      }}
+      <div class="nav-title">Ingest</div>
+      {{ nav('logs.upload', 'cloud-arrow-up', 'Upload logs') }} {{
+      nav('logs.index', 'folder2-open', 'Uploaded files') }} {{
+      nav('reports.index', 'file-earmark-bar-graph', 'Reports', 'reports.') }}
+      {% if current_user.is_admin %}
+      <div class="nav-title">Administration</div>
+      {{ nav('admin.overview', 'diagram-3', 'System overview') }} {{
+      nav('admin.users', 'people', 'Users') }} {{ nav('admin.rules', 'sliders',
+      'Detection rules') }} {{ nav('admin.activity', 'clock-history', 'Activity
+      trail') }} {% endif %}
+      <div class="side-user">
+        <span class="avatar">{{ current_user.initials }}</span>
+        <div>
+          <b>{{ current_user.name }}</b
+          ><small>{{ defaults.roles[current_user.role] }}</small>
+        </div>
+        <a
+          href="{{ url_for('auth.profile') }}"
+          title="Profile"
+          aria-label="Profile"
+          ><i class="bi bi-gear"></i
+        ></a>
+      </div>
+    </aside>
+    <div class="backdrop" aria-hidden="true"></div>
+    <div class="main">
+      <header class="topbar">
+        <button class="menu-btn" id="menu-btn" aria-label="Menu">
+          <i class="bi bi-list"></i>
+        </button>
+        <div>
+          {% block crumb %}{% endblock %}
+          <h1>{% block heading %}{% endblock %}</h1>
+          <p>{% block sub %}{% endblock %}</p>
+        </div>
+        <div class="actions">
+          <form
+            class="search"
+            action="{{ url_for('logs.entries') }}"
+            method="get"
+            role="search"
+          >
+            <i class="bi bi-search"></i
+            ><input
+              id="global-search"
+              name="ip"
+              placeholder="Search IP address"
+              aria-label="Search by IP address"
+              autocomplete="off"
+            /><kbd>/</kbd>
+          </form>
+          {% block actions %}{% endblock %}
+          <form method="post" action="{{ url_for('auth.logout') }}">
+            <input
+              type="hidden"
+              name="csrf_token"
+              value="{{ csrf_token() }}"
+            /><button class="btn-x ghost sm" aria-label="Sign out">
+              <i class="bi bi-box-arrow-right"></i><span>Sign out</span>
+            </button>
+          </form>
+        </div>
+      </header>
+      <main class="content" id="content">
+        {% block content %}{% endblock %}
+      </main>
+    </div>
+    <div class="toasts" id="toasts"></div>
+    {% for category, message in get_flashed_messages(with_categories=true)
+    %}<span hidden data-flash data-cat="{{ category }}">{{ message }}</span>{%
+    endfor %}
+    <script src="{{ url_for('static', filename='vendor/apexcharts.min.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/app.js') }}"></script>
+    <script src="{{ url_for('static', filename='js/charts.js') }}"></script>
+    {% block scripts %}{% endblock %}
+  </body>
+</html>

@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+{% from "_macros.html" import sev, csrf with context %}
+{% block title %}Detection rules{% endblock %}
+{% block heading %}Detection rules{% endblock %}
+{% block sub %}Tune thresholds and patterns. Changes apply to files uploaded afterwards{% endblock %}
+{% block content %}
+{% for r in rules %}
+<form class="rule {{ '' if r.enabled else 'off' }}" method="post">{{ csrf() }}<input type="hidden" name="rule_id" value="{{ r.id }}">
+  <div class="rule-head"><div><h3 style="font-size:17px">{{ r.name }}</h3><div class="muted">{{ r.description }}</div></div>
+    <span class="tag" style="margin-left:auto">{{ r.kind|replace('_', ' ') }}</span>
+    <label class="check"><input class="switch" type="checkbox" name="enabled" {{ 'checked' if r.enabled }}>Enabled</label></div>
+  <div class="rule-body">
+    <div class="field"><label>Severity</label><select name="severity">{% for k in defaults.severity_weights %}<option value="{{ k }}" {{ 'selected' if r.severity == k }}>{{ k|title }}</option>{% endfor %}</select></div>
+    <div class="field"><label>Threshold (events)</label><input name="threshold" type="number" min="1" value="{{ r.threshold }}"></div>
+    <div class="field"><label>Window (seconds)</label><input name="window_seconds" type="number" min="0" value="{{ r.window_seconds }}"></div>
+    <button class="btn-x blue">Save</button>
+    {% if r.kind == 'pattern' %}<div class="field wide"><label>Regex patterns, one per line</label><textarea name="pattern" class="mono" style="min-height:130px">{{ r.pattern }}</textarea></div>{% endif %}
+  </div>
+</form>
+{% endfor %}
+{% endblock %}

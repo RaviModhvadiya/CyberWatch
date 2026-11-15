@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% from "_macros.html" import empty with context %}
+{% block title %}System overview{% endblock %}
+{% block heading %}System overview{% endblock %}
+{% block sub %}How uploads, detections and analysts are performing across the whole system{% endblock %}
+{% block content %}
+<section class="posture solo rise"><div class="ledger c6">
+  {% for label, value, hint in [('Users', health.users, health.active_users ~ ' active'), ('Files processed', health.uploads, health.failed_uploads ~ ' failed'), ('Entries parsed', health.entries, health.database ~ ' database'), ('Alerts raised', health.alerts, health.closed ~ ' closed'), ('Resolution rate', health.resolution_rate, ''), ('Rules enabled', health.rules_on, 'of ' ~ health.rules ~ ' &middot; ' ~ health.disk_mb ~ ' MB stored')] %}
+  <div class="ledger-i"><small>{{ label }}</small><span class="num" data-count="{{ value }}"{% if label == 'Resolution rate' %} data-suffix="%"{% endif %}>0</span>{% if label == 'Resolution rate' %}<span class="sub">avg {{ health.avg_close_hours }} h to close</span>{% else %}<span class="sub">{{ hint|safe }}</span>{% endif %}</div>
+  {% endfor %}
+</div></section>
+<div class="grid g-12 rise" style="margin-top:18px" id="admin-root" data-alerts="{{ url_for('alerts.index') }}">
+  <div class="panel span-4"><div class="panel-head"><h3>Alerts by status</h3></div><div class="panel-body"><div id="chart-statuses" class="chart-box loading" style="min-height:270px"></div></div></div>
+  <div class="panel span-4"><div class="panel-head"><h3>Alerts by severity</h3></div><div class="panel-body"><div id="chart-severities" class="chart-box loading" style="min-height:270px"></div></div></div>
+  <div class="panel span-4"><div class="panel-head"><h3>Uploads per day</h3></div><div class="panel-body"><div id="chart-uploads" class="chart-box loading" style="min-height:270px"></div></div></div>
+  <div class="panel span-5"><div class="panel-head"><h3>Workload per account</h3></div><div class="panel-body"><div id="chart-analysts" class="chart-box loading" style="min-height:270px"></div></div></div>
+  <div class="panel span-7"><div class="panel-head"><h3>Analyst performance</h3></div>
+    <div class="table-wrap"><table class="tbl" style="margin-top:12px"><thead><tr><th>Account</th><th>Uploads</th><th>Alerts</th><th>Open</th><th>Closed</th><th>Last sign-in</th></tr></thead><tbody>
+    {% for a in analysts %}<tr><td class="who"><b>{{ a.user.name }}</b>{% if not a.user.active %} <span class="tag">disabled</span>{% endif %}<small>{{ defaults.roles[a.user.role] }}</small></td><td class="num">{{ a.uploads }}</td><td class="num">{{ a.alerts }}</td><td class="num">{{ a.open }}</td><td class="num">{{ a.closed }}</td><td class="muted">{{ a.user.last_login|ago if a.user.last_login else 'Never' }}</td></tr>{% endfor %}
+    </tbody></table></div></div>
+  <div class="panel span-12"><div class="panel-head"><h3>Latest activity</h3><small><a href="{{ url_for('admin.activity') }}">Full trail</a></small></div>
+  {% if recent %}<div class="table-wrap"><table class="tbl" style="margin-top:12px"><tbody>
+    {% for r in recent %}<tr><td class="muted" style="white-space:nowrap" title="{{ r.created_at.strftime('%d %b %Y, %H:%M:%S') }}">{{ r.created_at|ago }}</td><td>{{ r.user.name if r.user else 'Anonymous' }}</td><td><span class="tag">{{ r.action|replace('_', ' ') }}</span></td><td class="wrap">{{ r.detail }}</td></tr>{% endfor %}
+  </tbody></table></div>{% else %}{{ empty('clock-history', 'No activity yet', 'Actions will be recorded here.') }}{% endif %}</div>
+</div>
+<script type="application/json" id="admin-data">{{ charts|tojson }}</script>
+{% endblock %}

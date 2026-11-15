@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+{% from "_macros.html" import pager, empty, sev, code with context %}
+{% block title %}Log explorer{% endblock %}
+{% block heading %}Log explorer{% endblock %}
+{% block crumb %}{% if log %}<div class="crumb"><a href="{{ url_for('logs.index') }}">Uploaded files</a><i class="bi bi-chevron-right"></i><span>{{ log.filename }}</span></div>{% endif %}{% endblock %}
+{% block sub %}{% if log %}{{ log.total_entries }} entries, {{ log.alert_count }} alerts{% else %}Search every parsed entry{% endif %}{% endblock %}
+{% block content %}
+<form class="filters" method="get">
+  {% if log %}<input type="hidden" name="log_id" value="{{ log.id }}">{% endif %}
+  <div class="filter"><label>Source IP</label><input name="ip" value="{{ request.args.get('ip', '') }}" placeholder="e.g. 203.0.113"></div>
+  <div class="filter"><label>Status code</label><input name="status" type="number" value="{{ request.args.get('status', '') }}" placeholder="e.g. 401"></div>
+  <div class="filter" style="flex:2"><label>Request contains</label><input name="q" value="{{ request.args.get('q', '') }}" placeholder="e.g. /login"></div>
+  <label class="check" style="padding-bottom:9px"><input type="checkbox" name="flagged" value="1" {{ 'checked' if request.args.get('flagged') }}> Flagged only</label>
+  <button class="btn-x"><i class="bi bi-funnel"></i>Filter</button>
+  {% if log %}<a class="btn-x ghost" href="{{ url_for('logs.entries') }}">All files</a>{% endif %}
+</form>
+<div class="panel">
+{% if pagination.items %}
+<div class="table-wrap"><table class="tbl"><thead><tr><th>Time</th><th>Source IP</th><th>Method</th><th>Status</th><th>Request</th><th>File</th><th>Findings</th></tr></thead><tbody>
+{% for e in pagination.items %}{% set found = marks.get(e.id, []) %}
+<tr class="{{ 'row-flag' if found }}"><td class="mono" style="white-space:nowrap">{{ e.timestamp.strftime('%Y-%m-%d %H:%M:%S') }}</td><td class="mono"><a href="{{ url_for('logs.entries', ip=e.ip) }}" style="color:inherit">{{ e.ip }}</a> <button class="copy" type="button" data-copy="{{ e.ip }}" aria-label="Copy IP"><i class="bi bi-clipboard"></i></button></td><td>{{ e.method }}</td>
+<td>{{ code(e.status_code) }}</td><td class="req" title="{{ e.request }}">{{ e.request }}</td><td class="muted">{{ e.log.filename }}</td>
+<td>{% if found|length == 1 %}<a href="{{ url_for('alerts.detail', alert_id=found[0].id) }}">{{ sev(found[0].severity) }}</a>{% elif found %}<a href="{{ url_for('alerts.index', entry_id=e.id) }}">{{ found|length }} alerts</a>{% else %}<span class="muted">-</span>{% endif %}</td></tr>
+{% endfor %}</tbody></table></div>{{ pager(pagination) }}
+{% else %}{{ empty('search', 'No entries match', 'Clear a filter or upload more logs.') }}{% endif %}
+</div>
+{% endblock %}

@@ -1,0 +1,30 @@
+{% extends "base.html" %}
+{% from "_macros.html" import pager, empty, sev, status with context %}
+{% block title %}Alerts{% endblock %}
+{% block heading %}Alerts{% endblock %}
+{% block sub %}Most severe first. Open an alert to investigate and record how it was handled{% endblock %}
+{% block content %}
+{% set base_args = request.args.to_dict() %}
+<nav class="tabs" aria-label="Alert status">
+  {% set _ = base_args.pop('page', None) %}{% set _ = base_args.pop('status', None) %}
+  <a class="{{ '' if request.args.get('status') else 'on' }}" href="{{ url_for('alerts.index', **base_args) }}">All <b>{{ total }}</b></a>
+  {% for k, v in defaults.alert_statuses.items() %}<a class="{{ 'on' if request.args.get('status') == k else '' }}" href="{{ url_for('alerts.index', status=k, **base_args) }}">{{ v }} <b>{{ counts.get(k, 0) }}</b></a>{% endfor %}
+</nav>
+<form class="filters" method="get">
+  {% if request.args.get('status') %}<input type="hidden" name="status" value="{{ request.args.get('status') }}">{% endif %}
+  {% for name in ('log_id', 'entry_id') %}{% if request.args.get(name) %}<input type="hidden" name="{{ name }}" value="{{ request.args.get(name) }}">{% endif %}{% endfor %}
+  <div class="filter"><label>Severity</label><select name="severity"><option value="">Any</option>{% for k in defaults.severity_weights %}<option value="{{ k }}" {{ 'selected' if request.args.get('severity') == k }}>{{ k|title }}</option>{% endfor %}</select></div>
+  <div class="filter"><label>Type</label><select name="type"><option value="">Any</option>{% for r in rules %}<option value="{{ r.key }}" {{ 'selected' if request.args.get('type') == r.key }}>{{ r.name }}</option>{% endfor %}</select></div>
+  <div class="filter"><label>Source IP</label><input name="ip" value="{{ request.args.get('ip', '') }}"></div>
+  <button class="btn-x"><i class="bi bi-funnel"></i>Filter</button>
+  <a class="btn-x ghost" href="{{ url_for('alerts.index') }}">Reset</a>
+</form>
+<div class="panel">
+{% if pagination.items %}
+<div class="table-wrap"><table class="tbl"><thead><tr><th>#</th><th>Severity</th><th>Type</th><th>Source IP</th><th>Detail</th><th>Event time</th><th>Status</th><th></th></tr></thead><tbody>
+{% for a in pagination.items %}<tr data-href="{{ url_for('alerts.detail', alert_id=a.id) }}" class="row-sev-{{ a.severity }}"><td class="muted">{{ a.id }}</td><td>{{ sev(a.severity) }}</td><td>{{ names.get(a.type, a.type) }}</td><td class="mono">{{ a.ip }} <button class="copy" type="button" data-copy="{{ a.ip }}" aria-label="Copy IP"><i class="bi bi-clipboard"></i></button></td><td class="req" title="{{ a.description }}">{{ a.description }}</td>
+<td class="muted" style="white-space:nowrap">{{ a.event_time.strftime('%d %b %H:%M') if a.event_time }}</td><td>{{ status(a.status) }}</td><td class="r"><a class="btn-x ghost sm" href="{{ url_for('alerts.detail', alert_id=a.id) }}">Open</a></td></tr>{% endfor %}
+</tbody></table></div>{{ pager(pagination) }}
+{% else %}{{ empty('bell-slash', 'No alerts found', 'Nothing matches these filters.') }}{% endif %}
+</div>
+{% endblock %}

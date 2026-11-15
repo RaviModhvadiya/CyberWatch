@@ -1,0 +1,52 @@
+{% extends "base.html" %}
+{% from "_macros.html" import sev, status, csrf, code with context %}
+{% block title %}Alert #{{ alert.id }}{% endblock %}
+{% block crumb %}<div class="crumb"><a href="{{ url_for('alerts.index') }}">Alerts</a><i class="bi bi-chevron-right"></i><span>#{{ alert.id }}</span></div>{% endblock %}
+{% block heading %}{{ names.get(alert.type, alert.type) }}{% endblock %}
+{% block sub %}From {{ alert.ip }} &middot; {{ alert.event_time.strftime('%d %b %Y, %H:%M') if alert.event_time }}{% endblock %}
+{% block actions %}<a class="btn-x ghost sm" href="{{ url_for('alerts.index') }}"><i class="bi bi-arrow-left"></i><span>Back</span></a>{% endblock %}
+{% block content %}
+<div class="grid g-12 rise">
+  <div class="span-7" style="display:grid;gap:18px;align-content:start">
+    <section class="alert-hero hero-{{ alert.severity }}">
+      <span class="ico"><i class="bi bi-{{ {'critical': 'lightning-charge-fill', 'high': 'exclamation-triangle-fill', 'medium': 'exclamation-circle-fill', 'low': 'info-circle-fill'}.get(alert.severity, 'info-circle-fill') }}"></i></span>
+      <div><h2>{{ alert.description }}</h2></div>
+      <div class="meta">{{ sev(alert.severity) }}{{ status(alert.status) }}</div>
+    </section>
+    <section class="panel"><div class="panel-head"><h3>Details</h3></div><div class="panel-body">
+      <dl class="kv">
+        <dt>Source IP</dt><dd><span class="mono">{{ alert.ip }}</span> <button class="copy" type="button" data-copy="{{ alert.ip }}" aria-label="Copy IP"><i class="bi bi-clipboard"></i></button> &nbsp;<a href="{{ url_for('alerts.index', ip=alert.ip) }}">All alerts</a> &middot; <a href="{{ url_for('logs.entries', ip=alert.ip) }}">All entries</a></dd>
+        <dt>Event time</dt><dd>{{ alert.event_time.strftime('%d %b %Y, %H:%M:%S') if alert.event_time }}</dd>
+        <dt>Source file</dt><dd><a href="{{ url_for('logs.entries', log_id=alert.log_id) }}">{{ alert.log.filename }}</a> <span class="muted">uploaded by {{ alert.user.name }}</span></dd>
+        {% if alert.resolved_at %}<dt>Closed</dt><dd>{{ alert.resolved_at.strftime('%d %b %Y, %H:%M') }} by {{ alert.resolver.name if alert.resolver else 'unknown' }}</dd>{% endif %}
+      </dl>
+      <h4 style="margin:20px 0 8px;font-size:14px;display:flex;align-items:center;gap:8px">Triggering log line <button class="copy" type="button" data-copy="{{ entry.raw or entry.request }}" aria-label="Copy log line"><i class="bi bi-clipboard"></i></button></h4>
+      <pre class="codebox">{{ entry.raw or entry.request }}</pre>
+    </div></section>
+    <section class="panel"><div class="panel-head"><h3>Activity from this IP up to the event</h3></div>
+      <div class="table-wrap"><table class="tbl" style="margin-top:12px"><thead><tr><th>Time</th><th>Method</th><th>Status</th><th>Request</th></tr></thead><tbody>
+      {% for e in nearby %}<tr class="{{ 'row-flag' if e.id == entry.id }}"><td class="mono">{{ e.timestamp.strftime('%H:%M:%S') }}</td><td>{{ e.method }}</td><td>{{ code(e.status_code) }}</td><td class="req" title="{{ e.request }}">{{ e.request }}</td></tr>{% endfor %}
+      </tbody></table></div></section>
+  </div>
+  <div class="span-5" style="display:grid;gap:18px;align-content:start">
+    <section class="panel sticky"><div class="panel-head"><h3>Investigation</h3></div><div class="panel-body">
+      <div class="quick">
+        {% if alert.status != 'investigating' %}<button class="btn-x ghost sm" type="button" data-quick-status="investigating"><i class="bi bi-search"></i>Start investigating</button>{% endif %}
+        {% if alert.status != 'resolved' %}<button class="btn-x ghost sm" type="button" data-quick-status="resolved"><i class="bi bi-check2-circle"></i>Resolve</button>{% endif %}
+        {% if alert.status != 'false_positive' %}<button class="btn-x ghost sm" type="button" data-quick-status="false_positive"><i class="bi bi-slash-circle"></i>False positive</button>{% endif %}
+      </div>
+      <form method="post" action="{{ url_for('alerts.update', alert_id=alert.id) }}">{{ csrf() }}
+        <div class="field"><label for="status">Status</label><select id="status" name="status">{% for k, v in defaults.alert_statuses.items() %}<option value="{{ k }}" {{ 'selected' if alert.status == k }}>{{ v }}</option>{% endfor %}</select></div>
+        <div class="field"><label for="note">Note: what you found and how it was solved</label><textarea id="note" name="note" placeholder="Blocked 203.0.113.50 at the firewall and rotated the exposed credentials."></textarea><div class="hint">Required when closing an alert.</div></div>
+        {% if siblings %}<label class="check" style="margin-top:14px"><input type="checkbox" name="apply_ip" value="1"><span>Apply to the {{ siblings }} other open alert{{ 's' if siblings != 1 }} from {{ alert.ip }} in this file</span></label>{% endif %}
+        <button class="btn-x blue" style="margin-top:16px;width:100%"><i class="bi bi-check2-circle"></i>Save update</button>
+      </form>
+      <h4 style="margin:26px 0 14px;font-size:14px">History</h4>
+      {% if alert.notes %}<ul class="timeline">
+        {% for n in alert.notes|reverse %}<li class="{{ 'closed' if n.status_to in defaults.closing_statuses }}"><b>{{ n.author.name }}</b> <span class="muted" title="{{ n.created_at.strftime('%d %b %Y, %H:%M') }}">{{ n.created_at|ago }}</span>
+          {% if n.status_to %}<div style="margin-top:4px">Set to {{ status(n.status_to) }}</div>{% endif %}{% if n.body %}<p>{{ n.body }}</p>{% endif %}</li>{% endfor %}
+      </ul>{% else %}<p class="muted" style="margin:0">No notes yet. Your first note starts the record.</p>{% endif %}
+    </div></section>
+  </div>
+</div>
+{% endblock %}

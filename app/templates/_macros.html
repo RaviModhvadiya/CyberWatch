@@ -1,0 +1,51 @@
+{% macro sev(value) %}<span class="sev sev-{{ value }}">{{ value|title }}</span
+>{% endmacro %} {% macro status(value) %}<span class="st st-{{ value }}"
+  >{{ defaults.alert_statuses.get(value, value|replace('_', ' ')|capitalize)
+  }}</span
+>{% endmacro %} {% macro empty(icon, title, text) %}
+<div class="empty">
+  <i class="bi bi-{{ icon }}"></i><b>{{ title }}</b>{{ text }}
+</div>
+{% endmacro %} {% macro csrf() %}<input
+  type="hidden"
+  name="csrf_token"
+  value="{{ csrf_token() }}"
+/>{% endmacro %} {% macro pager(p) %} {% set args = request.args.to_dict() %}
+<nav class="pager">
+  <span class="muted">{{ '{:,}'.format(p.total) }} records</span> {% if p.pages
+  > 1 %}
+  <ul>
+    <li class="{{ '' if p.has_prev else 'off' }}">
+      <a
+        href="{{ url_for(request.endpoint, **dict(args, page=p.prev_num or 1)) }}"
+        aria-label="Previous"
+        ><i class="bi bi-chevron-left"></i
+      ></a>
+    </li>
+    {% for n in p.iter_pages(left_edge=1, right_edge=1, left_current=1,
+    right_current=2) %} {% if n %}
+    <li class="{{ 'on' if n == p.page else '' }}">
+      <a href="{{ url_for(request.endpoint, **dict(args, page=n)) }}"
+        >{{ n }}</a
+      >
+    </li>
+    {% else %}
+    <li class="off"><span>&hellip;</span></li>
+    {% endif %} {% endfor %}
+    <li class="{{ '' if p.has_next else 'off' }}">
+      <a
+        href="{{ url_for(request.endpoint, **dict(args, page=p.next_num or p.pages)) }}"
+        aria-label="Next"
+        ><i class="bi bi-chevron-right"></i
+      ></a>
+    </li>
+  </ul>
+  {% endif %}
+</nav>
+{% endmacro %} {% macro code(value) %}{% if value is none %}<span
+  class="tag mono"
+  >-</span
+>{% else %}<span
+  class="tag mono {{ 'code-401' if value == config.FAILED_STATUS else 'code-%dxx' % (value // 100) }}"
+  >{{ value }}</span
+>{% endif %}{% endmacro %}

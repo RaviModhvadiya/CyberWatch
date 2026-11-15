@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Sign in - {{ app_name }}</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'%3E%3Crect width='32' height='32' rx='9' fill='%23101828'/%3E%3Cpath d='M16 6l8 3v6c0 5-3.4 8.6-8 10-4.6-1.4-8-5-8-10V9z' fill='none' stroke='white' stroke-width='2'/%3E%3Cpath d='M12.5 15.5l2.5 2.5 4.5-5' fill='none' stroke='%23ef4a2b' stroke-width='2.2'/%3E%3C/svg%3E">
+<link rel="preload" href="{{ url_for('static', filename='vendor/fonts/public-sans-latin-wght-normal.woff2') }}" as="font" type="font/woff2" crossorigin>
+<link href="{{ url_for('static', filename='css/fonts.css') }}" rel="stylesheet">
+<link href="{{ url_for('static', filename='vendor/icons/bootstrap-icons.min.css') }}" rel="stylesheet">
+<link href="{{ url_for('static', filename='css/app.css') }}" rel="stylesheet">
+</head>
+<body>
+<div class="login">
+  <section class="login-art">
+    <a class="brand" style="padding:0" href="#"><span class="brand-mark"><i class="bi bi-shield-check"></i></span>{{ app_name }}</a>
+    <div class="copy-block">
+      <h2>Every log line, read for you.</h2>
+      <p style="margin-top:14px">Upload server logs, let the rules flag brute force, injection and floods, then close each alert with a note on how it was handled.</p>
+      <div class="login-feed" style="margin-top:22px"><span>401 x 14 &rarr; brute force</span><span>UNION SELECT &rarr; SQLi</span><span>../../etc/passwd &rarr; traversal</span></div>
+    </div>
+    <div class="radar" aria-hidden="true"><i class="blip" style="left:66%;top:28%"></i><i class="blip" style="left:30%;top:36%;animation-delay:1.2s"></i><i class="blip" style="left:58%;top:70%;animation-delay:2.1s"></i></div>
+  </section>
+  <section class="login-form">
+    <form method="post">
+      <input type="hidden" name="csrf_token" value="{{ csrf_token() }}">
+      <h1>Sign in</h1>
+      <p class="muted" style="margin-bottom:24px">Use the account your administrator created for you.</p>
+      {% for category, message in get_flashed_messages(with_categories=true) %}
+      <div class="toast-x {{ category }}" style="box-shadow:none;margin-bottom:16px;animation:none;max-width:none">{{ message }}</div>{% endfor %}
+      <div class="field"><label for="email">Email</label><input id="email" name="email" type="email" autocomplete="username" required autofocus></div>
+      <div class="field"><label for="password">Password</label><div class="pw"><input id="password" name="password" type="password" autocomplete="current-password" required><button type="button" aria-label="Show or hide password"><i class="bi bi-eye"></i></button></div><div class="caps"><i class="bi bi-exclamation-triangle"></i> Caps Lock is on</div></div>
+      <label class="check" style="margin:14px 0 20px"><input type="checkbox" name="remember"> Keep me signed in on this device</label>
+      <button class="btn-x blue" style="width:100%;justify-content:center;padding:11px">Sign in</button>
+    </form>
+    <div class="foot">{{ app_name }} &middot; Security log monitoring</div>
+  </section>
+</div>
+<script src="{{ url_for('static', filename='js/app.js') }}"></script>
+<div class="toasts" id="toasts"></div>
+</body>
+</html>
